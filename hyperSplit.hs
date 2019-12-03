@@ -1,49 +1,55 @@
-import Prelude hiding (map, drop)
-import Graphics.Image hiding (invert)
+import Prelude
+import qualified Graphics.Image as I
 import System.Environment
+import System.Random
 
 data ColorComponent = Red | Blue | Green
-
-main :: IO ()
-main = do
-        [x, y, infile, outfile] <- getArgs
-        pic <- readImageRGB VU infile
-        writeImage outfile $ superHyperSplit drop 2 pic
+type Picture = I.Image I.VU I.RGB Double
+type Picxel = I.Pixel I.RGB Double
 
 demo :: String -> IO ()
 demo infile = do
-        pic <- readImageRGB VU infile
-        writeImage ("1-drop-" ++ infile) $ superHyperSplit drop 1 pic
-        writeImage ("2-drop-" ++ infile) $ superHyperSplit drop 2 pic
-        writeImage ("3-drop-" ++ infile) $ superHyperSplit drop 3 pic
-        writeImage ("4-drop-" ++ infile) $ superHyperSplit drop 4 pic
-        writeImage ("1-keep-" ++ infile) $ superHyperSplit keep 1 pic
-        writeImage ("2-keep-" ++ infile) $ superHyperSplit keep 2 pic
-        writeImage ("3-keep-" ++ infile) $ superHyperSplit keep 3 pic
-        writeImage ("4-keep-" ++ infile) $ superHyperSplit keep 4 pic
+        img <- I.readImageRGB I.VU infile
+        g <- getStdGen
+        I.displayImage $ bleed g img
 
---superHyperSplit :: Int -> Image VU RGB Double -> Image VU RGB Double
-superHyperSplit fn n pic = foldr (+) pic $ take n $ iterate (hyperSplit (0, 10) (+) fn) pic
+bleed :: StdGen -> Picture -> Picture
+bleed g img = newRed + newGreen + newBlue
+  where (red, blue, green) = rgb img
+        (g1, g2, g3) = split3 g
+        newRed   = bleedPart g1 red
+        newGreen = bleedPart g2 green
+        newBlue  = bleedPart g3 blue
 
-hyperSplit (x, y) op keop img = red `op` blue `op` green
-  where red   = move ( x,  y) . map (keop Red)   $ img
-        green = move ( 0,  0) . map (keop Green) $ img
-        blue  = move (-x, -y) . map (keop Blue)  $ img
+rgb :: Picture -> (Picture, Picture, Picture)
+rgb img = (red, green, blue)
+  where red   = I.map (keep Red)   img
+        blue  = I.map (keep Blue)  img
+        green = I.map (keep Green) img
 
-move :: (Int, Int) -> Image VU RGB Double -> Image VU RGB Double
-move = translate Edge
+keep :: ColorComponent -> Picxel -> Picxel
+keep Red   (I.PixelRGB r g b) = I.PixelRGB r 0 0
+keep Green (I.PixelRGB r g b) = I.PixelRGB 0 g 0
+keep Blue  (I.PixelRGB r g b) = I.PixelRGB 0 0 b
 
-keep :: Num e => ColorComponent -> Pixel RGB e -> Pixel RGB e
-keep Red   (PixelRGB r g b) = PixelRGB r 0 0
-keep Green (PixelRGB r g b) = PixelRGB 0 g 0
-keep Blue  (PixelRGB r g b) = PixelRGB 0 0 b
+split3 :: StdGen -> (StdGen, StdGen, StdGen)
+split3 g = (g1, g2, g3)
+  where (g1, rest) = split g
+        (g2, g3)   = split rest
 
-drop :: Num e => ColorComponent -> Pixel RGB e -> Pixel RGB e
-drop Red   (PixelRGB r g b) = PixelRGB 0 g b
-drop Green (PixelRGB r g b) = PixelRGB r 0 b
-drop Blue  (PixelRGB r g b) = PixelRGB r g 0
+bleedPart :: StdGen -> Picture -> Picture
+bleedPart g img = I.transpose $ I.fromLists $ newLists
+  where newLists = doBleedPart (randomRs (5, 15) g) lists
+        lists = I.toLists $ I.transpose img
+        
+doBleedPart :: [Int] -> [[Picxel]] -> [[Picxel]]
+doBleedPart randoms (row:rows) = bleedRow some row : doBleedPart rest rows
+  where some = take (length rows) randoms
+        rest = drop (length rows) randoms
+doBleedPart _ []     = []
 
-invert :: Image VU RGB Double -> Image VU RGB Double
-invert = map inver
-  where inver (PixelRGB r g b) = PixelRGB (inv r) (inv g) (inv b)
-        inv x = 1 - x
+bleedRow :: [Int] -> [Picxel] -> [Picxel]
+bleedRow (n:ns) (p:ps) = repeats ++ (bleedRow ns rest)
+  where repeats = take (length (p:ps)) $ replicate n p
+        rest    = drop n $ p:ps
+bleedRow _   pixels    = pixels
