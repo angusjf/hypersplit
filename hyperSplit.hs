@@ -18,20 +18,21 @@ horizontalBleedRgb g = applyRgb (bleed g1, bleed g2, bleed g3)
 verticalBleedRgb :: StdGen -> Picture -> Picture
 verticalBleedRgb g = I.transpose . horizontalBleedRgb g . I.transpose
 
-horizontalBleedRb :: StdGen -> Picture -> Picture
-horizontalBleedRb g = applyRgb (bleed g1, toBlack, bleed g3)
-  where (g1, g2, g3) = split3 g
+verticalPixelSort :: StdGen -> Picture -> Picture
+verticalPixelSort _ = I.transpose . id . I.transpose
 
-horizontalBleedR :: StdGen -> Picture -> Picture
-horizontalBleedR g = applyRgb (bleed g1, toBlack, id)
-  where (g1, g2, g3) = split3 g
+--hyperSplit :: StdGen -> Picture -> Picture
+--hyperSplit g = map (drop Green . (applyRgb (bleed g1, toBlack, bleed g3)))
+--  where (g1, g2, g3) = split3 g
+
+applyRowFnsToImage :: [[Picxel] -> [Picxel]] -> Picture -> Picture
+applyRowFnsToImage fns = I.fromLists . applyFnsToRows fns . I.toLists
 
 bleed :: StdGen -> Picture -> Picture
-bleed g img = (I.fromLists . fn . I.toLists) img
-  where fn = repeatElems2D (randomRs (5, 15) g)
+bleed g = applyRowFnsToImage (map repeatElems rands2d)
+  where rands2d = map (randomRs (5, 15)) (infinisplit g)
 
 toBlack :: Picture -> Picture
 toBlack = I.map (const black)
   where black :: Picxel
         black = I.PixelRGB 0 0 0
-

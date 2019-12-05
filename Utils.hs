@@ -28,12 +28,13 @@ split3 :: StdGen -> (StdGen, StdGen, StdGen)
 split3 g = (g1, g2, g3)
   where (g1, rest) = split g
         (g2, g3)   = split rest
-        
-repeatElems2D :: [Int] -> [[a]] -> [[a]]
-repeatElems2D randoms (row:rows) = repeatElems some row : repeatElems2D rest rows
-  where some = take (length row) randoms
-        rest = drop (length row) randoms
-repeatElems2D _ [] = []
+
+infinisplit :: StdGen -> [StdGen]
+infinisplit g = g1:infinisplit g2
+  where (g1, g2) = split g
+
+applyFnsToRows :: [[a] -> [b]] -> [[a]] -> [[b]]
+applyFnsToRows rowFns rows = zipWith (\rf row -> rf row) rowFns rows
 
 repeatElems :: [Int] -> [a] -> [a]
 repeatElems (n:ns) all@(x:_) = repeats ++ repeatElems ns rest
