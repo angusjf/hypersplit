@@ -25,8 +25,12 @@ horizontalPixelSort g = applyRowFnsToImage rowFns
   where rowFns = map (\gen -> roughSortBy gen (4, 36) sortFn) (infinisplit g)
         sortFn = \a b -> compare (brightness a) (brightness b)
 
+asdfPixelSort :: a -> Picture -> Picture
+asdfPixelSort _ = applyRowFnsToImage (repeat asdfRowSort)
+
 horizontalPixelSortRgb :: StdGen -> Picture -> Picture
-horizontalPixelSortRgb g = applyRgb (horizontalPixelSort g, id, id)
+horizontalPixelSortRgb g = applyRgb (horizontalPixelSort g1, horizontalPixelSort g2, horizontalPixelSortRgb g3)
+  where (g1, g2, g3) = split3 g
 
 verticalBleedRgb = verticalize . horizontalBleedRgb
 verticalPixelSort = verticalize . horizontalPixelSort

@@ -40,7 +40,7 @@ infinisplit g = g1:infinisplit g2
 repeatElems :: [Int] -> [a] -> [a]
 repeatElems (n:ns) all@(x:_) = repeats ++ repeatElems ns rest
   where repeats = take (length all) $ replicate n x
-        rest    = drop n $ all
+        rest    = drop n all
 repeatElems _ xs = xs
 
 toBlack :: Picture -> Picture
@@ -60,3 +60,16 @@ roughSortBy g range fn list = sortBy fn start ++ roughSortBy g' range fn end
 
 verticalize :: (Picture -> Picture) -> Picture -> Picture
 verticalize fn = I.transpose . fn . I.transpose
+
+asdfRowSort :: [Picxel] -> [Picxel]
+asdfRowSort = concat . map (sortBy sortFn) . breakUp isDark
+  where sortFn a b = compare (brightness a) (brightness b)
+
+breakUp :: (a -> Bool) -> [a] -> [[a]]
+breakUp fn xs = case end of
+  []   -> start : []
+  x:xs -> start : [x] : breakUp fn xs
+  where (start, end) = break fn xs
+
+isDark :: Picxel -> Bool
+isDark = (< 0.5) . brightness
