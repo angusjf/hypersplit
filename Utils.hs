@@ -2,6 +2,7 @@ module Utils where
 
 import System.Random
 import Data.List
+import Data.Tuple
 import qualified Graphics.Image as I
 
 data ColorComponent = Red | Blue | Green
@@ -61,15 +62,14 @@ roughSortBy g range fn list = sortBy fn start ++ roughSortBy g' range fn end
 verticalize :: (Picture -> Picture) -> Picture -> Picture
 verticalize fn = I.transpose . fn . I.transpose
 
-asdfRowSort :: [Picxel] -> [Picxel]
-asdfRowSort = concat . map (sortBy sortFn) . breakUp isDark
+asdfRowSort :: (Picxel -> Bool) -> [Picxel] -> [Picxel]
+asdfRowSort break = concatMap (sortBy sortFn) . breakUp break
   where sortFn a b = compare (brightness a) (brightness b)
 
 breakUp :: (a -> Bool) -> [a] -> [[a]]
-breakUp fn xs = case end of
-  []   -> start : []
-  x:xs -> start : [x] : breakUp fn xs
-  where (start, end) = break fn xs
+breakUp fn = swapApply (span fn, break fn)
 
-isDark :: Picxel -> Bool
-isDark = (< 0.5) . brightness
+swapApply (f, g) xs = case f xs of 
+    ([], end)    -> swapApply (g, f) end
+    (start, [])  -> start : []
+    (start, end) -> start : swapApply (g, f) end

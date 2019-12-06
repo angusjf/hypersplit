@@ -1,16 +1,19 @@
 module HyperSplit where
 
 import qualified Graphics.Image as I
-import System.Environment
 import System.Random
 import Data.List
 import Utils
 
-run :: (StdGen -> Picture -> Picture) -> String -> IO ()
+run :: (Picture -> Picture) -> String -> IO ()
 run fn infile = do
         img <- I.readImageRGB I.VU infile
+        I.displayImage (fn img)
+
+runWithRandom :: (StdGen -> Picture -> Picture) -> String -> IO ()
+runWithRandom fn infile = do
         g <- getStdGen
-        I.displayImage $ fn g img
+        run (fn g) infile
 
 bleed :: StdGen -> Picture -> Picture
 bleed g = applyRowFnsToImage (map repeatElems rands2d)
@@ -25,8 +28,11 @@ horizontalPixelSort g = applyRowFnsToImage rowFns
   where rowFns = map (\gen -> roughSortBy gen (4, 36) sortFn) (infinisplit g)
         sortFn = \a b -> compare (brightness a) (brightness b)
 
-asdfPixelSort :: a -> Picture -> Picture
-asdfPixelSort _ = applyRowFnsToImage (repeat asdfRowSort)
+asdfPixelSort :: (Picxel -> Bool) -> Picture -> Picture
+asdfPixelSort break = applyRowFnsToImage (repeat (asdfRowSort break))
+
+verticalAsdfPixelSort :: (Picxel -> Bool) -> Picture -> Picture
+verticalAsdfPixelSort = verticalize . asdfPixelSort
 
 horizontalPixelSortRgb :: StdGen -> Picture -> Picture
 horizontalPixelSortRgb g = applyRgb (horizontalPixelSort g1, horizontalPixelSort g2, horizontalPixelSortRgb g3)
