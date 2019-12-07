@@ -5,7 +5,20 @@ import Data.List
 import Data.Tuple
 import qualified Graphics.Image as I
 
-data ColorComponent = Red | Blue | Green
+data ColorComponent = Red | Green | Blue deriving (Show, Eq)
+
+instance Random ColorComponent where
+  randomR (lo, hi) g = let (n, g') = randomR (colorToInt lo, colorToInt hi) g in (intToColor n, g')
+    where intToColor :: Int -> ColorComponent
+          intToColor 0 = Red
+          intToColor 1 = Green
+          intToColor 2 = Blue
+          colorToInt :: ColorComponent -> Int
+          colorToInt Red = 0
+          colorToInt Green = 1
+          colorToInt Blue = 2
+
+  random g = randomR (Red, Blue) g
 
 type Picture = I.Image I.VU I.RGB Double
 type Picxel = I.Pixel I.RGB Double
@@ -38,9 +51,12 @@ infinisplit :: StdGen -> [StdGen]
 infinisplit g = g1:infinisplit g2
   where (g1, g2) = split g
 
+safeRepeatElems :: [Int] -> [a] -> [a]
+safeRepeatElems = undefined
+
 repeatElems :: [Int] -> [a] -> [a]
 repeatElems (n:ns) all@(x:_) = repeats ++ repeatElems ns rest
-  where repeats = take (length all) $ replicate n x
+  where repeats = replicate n x
         rest    = drop n all
 repeatElems _ xs = xs
 
@@ -73,3 +89,14 @@ swapApply (f, g) xs = case f xs of
     ([], end)    -> swapApply (g, f) end
     (start, [])  -> start : []
     (start, end) -> start : swapApply (g, f) end
+
+luminosity :: Picxel -> Double
+luminosity (I.PixelRGB r g b) = (maximum [r, g, b] + minimum [r, g, b]) / 2
+
+saturation :: Picxel -> Double
+saturation (I.PixelRGB r g b) | l < 1     = (maximum [r, g, b] - minimum [r, g, b]) / (1 - abs (2 * l - 1))
+                              | otherwise = 0
+  where l = luminosity (I.PixelRGB r g b)
+
+rotate :: Int -> [a] -> [a]
+rotate n xs = take (length xs) $ drop n $ cycle xs
