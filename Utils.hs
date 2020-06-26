@@ -51,8 +51,11 @@ infinisplit :: StdGen -> [StdGen]
 infinisplit g = g1:infinisplit g2
   where (g1, g2) = split g
 
-safeRepeatElems :: [Int] -> [a] -> [a]
-safeRepeatElems = undefined
+repeatElemsSafe :: [Int] -> [a] -> [a]
+repeatElemsSafe (n:ns) all@(x:_) = repeats ++ repeatElemsSafe ns rest
+  where repeats = take (length all) $ replicate n x
+        rest    = drop n all
+repeatElemsSafe _ xs = xs
 
 repeatElems :: [Int] -> [a] -> [a]
 repeatElems (n:ns) all@(x:_) = repeats ++ repeatElems ns rest

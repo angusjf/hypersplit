@@ -1,5 +1,8 @@
 dist
 dist-*
+*.png
+*.jpeg
+*.jpg
 cabal-dev
 *.o
 *.hi
