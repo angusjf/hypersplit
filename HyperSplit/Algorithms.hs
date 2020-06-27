@@ -1,35 +1,38 @@
-module Algorithms where
+module HyperSplit.Algorithms where
 
 import qualified Graphics.Image as I
 import System.Random
 import Data.List
-import Utils
+import HyperSplit.Utils
 
 type Algorithm = StdGen -> Picture -> Picture
 
-proc :: (Picture -> Picture) -> String -> IO Picture
-proc fn infile = I.readImageRGB I.VU infile >>= return . fn
+nothing :: Algorithm
+nothing = flip const
 
-run :: (Picture -> Picture) -> String -> IO ()
-run fn infile = do
-        img <- I.readImageRGB I.VU infile
-        I.displayImage (fn img)
+-----proc :: (Picture -> Picture) -> String -> IO Picture
+-----proc fn infile = I.readImageRGB I.VU infile >>= return . fn
+-----
+-----run :: (Picture -> Picture) -> String -> IO ()
+-----run fn infile = do
+-----        img <- I.readImageRGB I.VU infile
+-----        I.displayImage (fn img)
 
-runWithRandom :: (StdGen -> Picture -> Picture) -> String -> IO ()
-runWithRandom fn infile = do
-        g <- getStdGen
-        run (fn g) infile
+-----runWithRandom :: (StdGen -> Picture -> Picture) -> String -> IO ()
+-----runWithRandom fn infile = do
+-----        g <- getStdGen
+-----        run (fn g) infile
 
-bleed :: StdGen -> Picture -> Picture
+bleed :: Algorithm
 bleed g = applyRowFnsToImage (map repeatElemsSafe rands2d)
   where rands2d = map (map randfn) $ map (randomRs (1, 20)) (infinisplit g)
         randfn n = if n > 19 then n * 4 else div n 2
 
-bleedRgb :: StdGen -> Picture -> Picture
+bleedRgb :: Algorithm
 bleedRgb g = applyRgb (bleed g1, bleed g2, bleed g3)
   where (g1, g2, g3) = split3 g
 
-pixelSort :: StdGen -> Picture -> Picture
+pixelSort :: Algorithm
 pixelSort g = applyRowFnsToImage rowFns
   where rowFns = map (\gen -> roughSortBy gen (4, 36) sortFn) (infinisplit g)
         sortFn = \a b -> compare (brightness a) (brightness b)
@@ -43,16 +46,19 @@ asdfPixelSortRgb fn1 fn2 fn3 = applyRgb (red, green, blue)
         green = asdfPixelSort fn2
         blue = asdfPixelSort fn3
 
+vBleedRgb :: Algorithm
 vBleedRgb = verticalize . bleedRgb
+vPixelSort :: Algorithm
 vPixelSort = verticalize . pixelSort
+--vAsdfPixelSortRgb :: Algorithm
 --vAsdfPixelSortRgb = verticalize . asdfPixelSortRgb
-vAsdfPixelSort = verticalize . asdfPixelSort
+--vAsdfPixelSort :: Algorithm
+--vAsdfPixelSort = verticalize . asdfPixelSort
 
---hyperSplit :: StdGen -> Picture -> Picture
 --hyperSplit g = map (drop Green . (applyRgb (bleed g1, toBlack, bleed g3)))
 --  where (g1, g2, g3) = split3 g
 
-shift :: StdGen -> Picture -> Picture
+shift :: Algorithm
 shift g = applyRowFnsToImage (repeatElems (randomRs (1, 10) g1) rowFns)
   where (g1, g2, g3) = split3 g
         rowFns :: [[Picxel] -> [Picxel]]
@@ -60,7 +66,7 @@ shift g = applyRowFnsToImage (repeatElems (randomRs (1, 10) g1) rowFns)
         fn :: Int -> ColorComponent -> ([Picxel] -> [Picxel])
         fn a b = (rotate a) . map (keep b)
 
-rgbShiftElm :: Int -> StdGen -> Picture -> Picture
+rgbShiftElm :: Int -> Algorithm
 rgbShiftElm a g img = applyRgb (red, green, blue) img
   where (g1, g2, g3) = split3 g
         red :: Picture -> Picture

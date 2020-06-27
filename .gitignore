@@ -1,5 +1,8 @@
 dist
 dist-*
+.DS_Store
+Main
+images
 *.png
 *.jpeg
 *.jpg

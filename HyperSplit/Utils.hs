@@ -1,4 +1,4 @@
-module Utils where
+module HyperSplit.Utils where
 
 import System.Random
 import Data.List
