@@ -10,4 +10,4 @@ applyTo :: String -> Algorithm -> IO ()
 applyTo infile fn = do
     img <- I.readImageRGB I.VU infile
     g <- getStdGen
-    I.writeImage "outfile.png" (fn g img)
+    I.writeImage "output.png" (fn g img)

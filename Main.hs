@@ -31,7 +31,5 @@ toAlgorithm ["pixelSort"] = Just pixelSort
 toAlgorithm ["vBleedRgb"] = Just vBleedRgb
 toAlgorithm ["vPixelSort"] = Just vPixelSort
 toAlgorithm ["shift"] = Just shift
-toAlgorithm ["rgbShiftElm", n] = do 
-                                   num <- readMaybe n
-                                   Just $ rgbShiftElm num
+toAlgorithm ["rgbShiftElm", n] = readMaybe n >>= Just . rgbShiftElm
 toAlgorithm _ = Nothing
