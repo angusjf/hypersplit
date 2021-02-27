@@ -32,9 +32,44 @@ bleedRgb :: Algorithm
 bleedRgb g = applyRgb (bleed g1, bleed g2, bleed g3)
   where (g1, g2, g3) = split3 g
 
+fullPixelSort :: Algorithm
+fullPixelSort g = applyRowFnsToImage rowFns
+  where rowFns = repeat $ concatMap (sortBy sortFn) . cluster 2 brightness
+        sortFn = \a b -> compare (brightness a) (brightness b)
+
+cluster :: Double -> (a -> Double) -> [a] -> [[a]]
+cluster bins f pixels = splitWith (\last current -> seg last == seg current) pixels
+  where max_br = maximum $ map f pixels
+        min_br = minimum $ map f pixels
+        range = max_br - min_br
+        seg p = floor $ (bins *) $ ((f p) - min_br) / range
+
+splitWith :: (a -> a -> Bool) -> [a] -> [[a]]
+splitWith p xs =
+    case span2 p xs of
+        ([], []) -> []
+        (xs, []) -> [xs]
+        (xs, ys) -> xs : splitWith p ys
+
+span2 :: (a -> a -> Bool) -> [a] -> ([a], [a])
+span2 _ [] = ([], [])
+span2 p (x:xs) = (reverse a, b)
+  where (a, b) = span2Helper p [x] xs
+
+span2Helper :: (a -> a -> Bool) -> [a] -> [a] -> ([a], [a])
+span2Helper p acc [] = (acc, [])
+span2Helper p (acc:accs) (alpha:betas) =
+  if p acc alpha then
+    span2Helper p (alpha:acc:accs) betas
+  else
+    ((acc:accs), (alpha:betas))
+
+vFullPixelSort :: Algorithm
+vFullPixelSort = verticalize . fullPixelSort
+
 pixelSort :: Algorithm
 pixelSort g = applyRowFnsToImage rowFns
-  where rowFns = map (\gen -> roughSortBy gen (4, 36) sortFn) (infinisplit g)
+  where rowFns = map (\gen -> roughSortBy gen (40, 56) sortFn) (infinisplit g)
         sortFn = \a b -> compare (brightness a) (brightness b)
 
 asdfPixelSort :: (Picxel -> Bool) -> Picture -> Picture

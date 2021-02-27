@@ -15,11 +15,14 @@ main = do
         putStrLn "where algorithm is: nothing, bleed, bleedRgb, pixelSort, " >>
         putStrLn "vBleedRgb, vPixelSort, shift, rgbShiftElm N"
       _:_:_ ->
-        let infile:algoName = args
-            algorithm = toAlgorithm algoName
-        in case algorithm of
-             Just alg -> applyTo infile alg
-             Nothing -> putStrLn "error: bad algorithm. see --help"
+        let
+          algoName = init args
+          infile = last args
+        in case toAlgorithm algoName of
+          Just alg ->
+            applyTo infile alg
+          Nothing ->
+            putStrLn $ "error: bad algorithm '" ++ (concat algoName) ++ "'. see --help"
       _ ->
         putStrLn "usage: hypersplit algorithm_name image.png. see --help"
 
@@ -31,5 +34,7 @@ toAlgorithm ["pixelSort"] = Just pixelSort
 toAlgorithm ["vBleedRgb"] = Just vBleedRgb
 toAlgorithm ["vPixelSort"] = Just vPixelSort
 toAlgorithm ["shift"] = Just shift
+toAlgorithm ["fullPixelSort"] = Just fullPixelSort
+toAlgorithm ["vFullPixelSort"] = Just vFullPixelSort
 toAlgorithm ["rgbShiftElm", n] = readMaybe n >>= Just . rgbShiftElm
 toAlgorithm _ = Nothing
